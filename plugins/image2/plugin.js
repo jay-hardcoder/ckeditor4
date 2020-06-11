@@ -276,7 +276,13 @@
 			else {
 				setWrapperAlign( this.widget, alignClasses );
 			}
-		}
+        }
+        
+        function getUrlParam( url, paramName ) {
+            var reParam = new RegExp( '(?:[\?&]|&)' + paramName + '=([^&]+)', 'i' );
+            var match = url.match( reParam );
+            return ( match && match.length > 1 ) ? match[1] : null;
+        }
 
 		return {
 			allowedContent: getWidgetAllowedContent( editor ),
@@ -341,15 +347,24 @@
 				} else {
 					if ( !this.parts.link )
 						this.parts.link = this.parts.image.getParent();
-				}
+                }
 
+                this.data.src = this.data.src || "";
+                var fileIdAttr = getUrlParam(this.data.src, "file");
+                var bizCodeAttr = getUrlParam(this.data.src, "code");
+                var attrIndex = this.data.src.lastIndexOf("?");
+                attrIndex = attrIndex>-1 ? attrIndex : this.data.src.length;
+                this.data.src = this.data.src.substring(0, attrIndex);
 				this.parts.image.setAttributes( {
 					src: this.data.src,
 
 					// This internal is required by the editor.
 					'data-cke-saved-src': this.data.src,
 
-					alt: this.data.alt
+                    alt: this.data.alt,
+                    
+                    fileIdAttr: fileIdAttr,
+                    bizCodeAttr: bizCodeAttr
 				} );
 
 				// If shifting non-captioned -> captioned, remove classes

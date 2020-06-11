@@ -26,9 +26,9 @@
             
             editor.on('fileUploadRequest', function(evt){
                 var fileLoader = evt.data.fileLoader;
-                var xhr1 = new XMLHttpRequest();
+                var xhr1 = createXMLHttpRequest();
                 var xhr = fileLoader.xhr;
-                fileLoader.bizCode = getUrlParam(fileLoader.uploadUrl, "bizCode");
+                fileLoader.bizCodeAttr = getUrlParam(fileLoader.uploadUrl, "bizCode");
                 return new CKEDITOR.tools.promise(function(resolve, reject){
                     xhr1.open('GET', fileLoader.uploadUrl, true);
                     xhr1.responseType = 'json';
@@ -60,7 +60,7 @@
                     formData.append( 'file', fileLoader.file );
                     xhr.send(formData);
                 });
-            }, null, null, 1);
+            }, null, null, 2);
 
 			/**
 			 * Event fired when the {@link CKEDITOR.fileTools.fileLoader file loader} should send XHR. If the event is not
@@ -125,9 +125,11 @@
                 evt.data.fileName = fileLoader.file.name;
 
                 evt.data.fileIdAttr = resData.data.fileId;
-                evt.data.bizCodeAttr = fileLoader.bizCode;
+                evt.data.bizCodeAttr = fileLoader.bizCodeAttr;
+
+                evt.data.url = evt.data.url+ '?file=' +evt.data.fileIdAttr+ '&code=' +evt.data.bizCodeAttr;
                 evt.stop();
-            }, null, null, 1);
+            }, null, null, 2);
 
 			/**
 			 * Event fired when the {CKEDITOR.fileTools.fileLoader file upload} response is received and needs to be parsed.
@@ -190,6 +192,22 @@
             suffix = filename.substring(pos + 1);
         }
         return suffix.toLowerCase();
+    }
+
+    function createXMLHttpRequest() {
+        if ( !CKEDITOR.env.ie || location.protocol != 'file:' ) {
+            try {
+                return new XMLHttpRequest();
+            } catch ( e ) {
+            }
+        }
+        try {
+            return new ActiveXObject( 'Msxml2.XMLHTTP' );
+        } catch ( e ) {}
+        try {
+            return new ActiveXObject( 'Microsoft.XMLHTTP' );
+        } catch ( e ) {}
+        return null;
     }
 
 	/**
