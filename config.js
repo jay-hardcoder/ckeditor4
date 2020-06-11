@@ -33,7 +33,7 @@ CKEDITOR.editorConfig = function( config ) {
 		'forms,' +
 		'horizontalrule,' +
 		'htmlwriter,' +
-		'image,' +
+		'image2,' +
 		'iframe,' +
 		'indentlist,' +
 		'indentblock,' +
@@ -71,7 +71,11 @@ CKEDITOR.editorConfig = function( config ) {
 		'undo,' +
 		'uploadimage,' +
 		'wysiwygarea';
-	// %REMOVE_END%
+    // %REMOVE_END%
+    
+    
+    config.extraAllowedContent = true;
+    config.filebrowserUploadUrl=  '/api/fileApi/oss/policy?bizCode=SHARE_RESOURCE:FILE&client=WEB';
 };
 
 // %LEAVE_UNMINIFIED% %REMOVE_LINE%

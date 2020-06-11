@@ -22,7 +22,45 @@
 			 * @property {CKEDITOR.fileTools.uploadRepository} uploadRepository
 			 * @member CKEDITOR.editor
 			 */
-			editor.uploadRepository = new UploadRepository( editor );
+            editor.uploadRepository = new UploadRepository( editor );
+            
+            editor.on('fileUploadRequest', function(evt){
+                var fileLoader = evt.data.fileLoader;
+                var xhr1 = new XMLHttpRequest();
+                var xhr = fileLoader.xhr;
+                fileLoader.bizCode = getUrlParam(fileLoader.uploadUrl, "bizCode");
+                return new CKEDITOR.tools.promise(function(resolve, reject){
+                    xhr1.open('GET', fileLoader.uploadUrl, true);
+                    xhr1.responseType = 'json';
+                    xhr1.addEventListener('abort', function(){
+                        reject('abort');
+                    });
+                    xhr1.addEventListener('error', function(){
+                        reject('error');
+                    });
+                    xhr1.addEventListener('load', function(){
+                        resolve(xhr1.response.data);
+                    });
+                    xhr1.send();
+                    evt.stop();
+                }).then(function(oauthData){
+                    fileLoader.uploadUrl = oauthData.host;
+                    xhr.open('POST', fileLoader.uploadUrl, true);
+                    xhr.responseType = 'json';
+                    var formData = new FormData();
+                    formData.append( 'name', fileLoader.file.name );
+                    formData.append( 'key', oauthData.dir + oauthData.fileId + '.' + get_suffix(fileLoader.file.name) );
+                    formData.append( 'policy', oauthData.policy );
+                    formData.append( 'OSSAccessKeyId', oauthData.accessId );
+                    formData.append( 'x-oss-security-token', oauthData.token );
+                    formData.append( 'success_action_status', '200' );
+                    formData.append( 'callback', oauthData.callback );
+                    formData.append( 'signature', oauthData.signature );
+                    formData.append( 'x:name', fileLoader.file.name );
+                    formData.append( 'file', fileLoader.file );
+                    xhr.send(formData);
+                });
+            }, null, null, 1);
 
 			/**
 			 * Event fired when the {@link CKEDITOR.fileTools.fileLoader file loader} should send XHR. If the event is not
@@ -73,7 +111,23 @@
 				}
 
 				fileLoader.xhr.send( $formData );
-			}, null, null, 999 );
+            }, null, null, 999 );
+            
+            editor.on('fileUploadResponse', function(evt){
+                var fileLoader = evt.data.fileLoader;
+                var resData = fileLoader.xhr.response || {};
+                if (resData.code !== 0){
+                    evt.data.message = resData.message;
+                    evt.cancel();
+                }
+                
+                evt.data.url = resData.data.url;
+                evt.data.fileName = fileLoader.file.name;
+
+                evt.data.fileIdAttr = resData.data.fileId;
+                evt.data.bizCodeAttr = fileLoader.bizCode;
+                evt.stop();
+            }, null, null, 1);
 
 			/**
 			 * Event fired when the {CKEDITOR.fileTools.fileLoader file upload} response is received and needs to be parsed.
@@ -121,7 +175,22 @@
 				}
 			}, null, null, 999 );
 		}
-	} );
+    } );
+
+    function getUrlParam( url, paramName ) {
+        var reParam = new RegExp( '(?:[\?&]|&)' + paramName + '=([^&]+)', 'i' );
+        var match = url.match( reParam );
+        return ( match && match.length > 1 ) ? match[1] : null;
+    }
+
+    function get_suffix( filename ){
+        var pos = filename.lastIndexOf('.');
+        var suffix = '';
+        if(pos != - 1){
+            suffix = filename.substring(pos + 1);
+        }
+        return suffix.toLowerCase();
+    }
 
 	/**
 	 * File loader repository. It allows you to create and get {@link CKEDITOR.fileTools.fileLoader file loaders}.
@@ -635,7 +704,7 @@
 							fileLoader: loader
 						},
 						// Values to copy from event to FileLoader.
-						valuesToCopy = [ 'message', 'fileName', 'url' ],
+						valuesToCopy = ['message', 'fileName', 'url', 'fileIdAttr', 'bizCodeAttr'],
 						success = loader.editor.fire( 'fileUploadResponse', data );
 
 					for ( var i = 0; i < valuesToCopy.length; i++ ) {

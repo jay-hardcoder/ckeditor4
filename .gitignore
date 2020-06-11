@@ -11,11 +11,6 @@ node_modules/**
 build/**
 coverage/**
 
-dev/builder/release/**
-dev/builder/ckbuilder/**
-dev/langtool/po/**
-dev/langtool/cklangtool/**
-
 samples/toolbarconfigurator/.bender/**
 samples/toolbarconfigurator/node_modules/**
 samples/toolbarconfigurator/docs/**
